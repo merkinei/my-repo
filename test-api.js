@@ -5,10 +5,12 @@
  * Run with: node test-api.js
  */
 
-import('dotenv/config');
+import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 
 // Load environment variables
+dotenv.config({ path: '/workspaces/my-repo/.env.local' });
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
