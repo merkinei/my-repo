@@ -4,20 +4,11 @@ import {
   createBadRequestResponse,
   createNotFoundResponse,
   methodNotAllowed,
-  checkMethod,
   validateBody,
 } from "@/lib/api";
 import { z } from "zod";
-
-// Example data store (in production, use database)
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: string;
-}
-
-const usersStore: Map<string, User> = new Map();
+import { connectDB } from "@/lib/db/mongodb";
+import { User } from "@/lib/db/models";
 
 // Validation schemas
 const createUserSchema = z.object({
@@ -30,39 +21,39 @@ const createUserSchema = z.object({
  * POST /api/users - Create a new user
  */
 export const POST = async (context: APIContext) => {
-  if (context.request.method === "GET") {
-    const users = Array.from(usersStore.values());
-    return createSuccessResponse(users);
-  }
+  try {
+    await connectDB();
 
-  if (context.request.method === "POST") {
-    const { data, error } = await validateBody(context, createUserSchema);
-
-    if (error) return error;
-
-    // Check if email already exists
-    const exists = Array.from(usersStore.values()).some(
-      (u) => u.email === data.email
-    );
-
-    if (exists) {
-      return createBadRequestResponse("Email already exists");
+    if (context.request.method === "GET") {
+      const users = await User.find().sort({ createdAt: -1 });
+      return createSuccessResponse(users);
     }
 
-    const id = Date.now().toString();
-    const user: User = {
-      id,
-      name: data.name,
-      email: data.email,
-      createdAt: new Date().toISOString(),
-    };
+    if (context.request.method === "POST") {
+      const { data, error } = await validateBody(context, createUserSchema);
+      if (error) return error;
 
-    usersStore.set(id, user);
+      // Check if email already exists
+      const existingUser = await User.findOne({ email: data.email });
+      if (existingUser) {
+        return createBadRequestResponse("Email already exists");
+      }
 
-    return createSuccessResponse(user, 201);
+      const newUser = await User.create({
+        name: data.name,
+        email: data.email,
+      });
+
+      return createSuccessResponse(newUser.toObject(), 201);
+    }
+
+    return methodNotAllowed();
+  } catch (error) {
+    console.error("Users POST error:", error);
+    return createBadRequestResponse(
+      error instanceof Error ? error.message : "Failed to process users"
+    );
   }
-
-  return methodNotAllowed();
 };
 
 /**
@@ -73,34 +64,51 @@ export const getStaticPaths = () => {
   return [];
 };
 
-export const get = (context: APIContext) => {
-  const { id } = context.params;
+export const get = async (context: APIContext) => {
+  try {
+    await connectDB();
 
-  if (!id) {
-    const users = Array.from(usersStore.values());
-    return createSuccessResponse(users);
+    const { id } = context.params;
+
+    if (!id) {
+      const users = await User.find().sort({ createdAt: -1 });
+      return createSuccessResponse(users);
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return createNotFoundResponse("User");
+    }
+
+    return createSuccessResponse(user.toObject());
+  } catch (error) {
+    console.error("Users GET error:", error);
+    return createBadRequestResponse(
+      error instanceof Error ? error.message : "Failed to fetch users"
+    );
   }
-
-  const user = usersStore.get(id);
-  if (!user) {
-    return createNotFoundResponse("User");
-  }
-
-  return createSuccessResponse(user);
 };
 
-export const del = (context: APIContext) => {
-  const { id } = context.params;
+export const del = async (context: APIContext) => {
+  try {
+    await connectDB();
 
-  if (!id) {
-    return createBadRequestResponse("User ID is required");
+    const { id } = context.params;
+
+    if (!id) {
+      return createBadRequestResponse("User ID is required");
+    }
+
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+      return createNotFoundResponse("User");
+    }
+
+    return createSuccessResponse({ message: "User deleted" });
+  } catch (error) {
+    console.error("Users DELETE error:", error);
+    return createBadRequestResponse(
+      error instanceof Error ? error.message : "Failed to delete user"
+    );
   }
-
-  if (!usersStore.has(id)) {
-    return createNotFoundResponse("User");
-  }
-
-  usersStore.delete(id);
-
-  return createSuccessResponse({ message: "User deleted" });
 };

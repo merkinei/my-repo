@@ -4,21 +4,11 @@ import {
   createBadRequestResponse,
   createNotFoundResponse,
   methodNotAllowed,
-  checkMethod,
   validateBody,
 } from "@/lib/api";
 import { z } from "zod";
-
-// Example data store (in production, use database)
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const postsStore: Map<string, Post> = new Map();
+import { connectDB } from "@/lib/db/mongodb";
+import { Post } from "@/lib/db/models";
 
 // Validation schemas
 const createPostSchema = z.object({
@@ -33,33 +23,33 @@ const updatePostSchema = createPostSchema.partial();
  * POST /api/posts - Create a new post
  */
 export const POST = async (context: APIContext) => {
-  if (context.request.method === "GET") {
-    const posts = Array.from(postsStore.values());
-    return createSuccessResponse(posts);
+  try {
+    await connectDB();
+
+    if (context.request.method === "GET") {
+      const posts = await Post.find().sort({ createdAt: -1 });
+      return createSuccessResponse(posts);
+    }
+
+    if (context.request.method === "POST") {
+      const { data, error } = await validateBody(context, createPostSchema);
+      if (error) return error;
+
+      const newPost = await Post.create({
+        title: data.title,
+        content: data.content,
+      });
+
+      return createSuccessResponse(newPost.toObject(), 201);
+    }
+
+    return methodNotAllowed();
+  } catch (error) {
+    console.error("Posts POST error:", error);
+    return createBadRequestResponse(
+      error instanceof Error ? error.message : "Failed to process posts"
+    );
   }
-
-  if (context.request.method === "POST") {
-    const { data, error } = await validateBody(context, createPostSchema);
-
-    if (error) return error;
-
-    const id = Date.now().toString();
-    const now = new Date().toISOString();
-
-    const post: Post = {
-      id,
-      title: data.title,
-      content: data.content,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    postsStore.set(id, post);
-
-    return createSuccessResponse(post, 201);
-  }
-
-  return methodNotAllowed();
 };
 
 /**
@@ -68,69 +58,87 @@ export const POST = async (context: APIContext) => {
  * DELETE /api/posts/[id] - Delete a post
  */
 export const getStaticPaths = () => {
-  // This is for static generation - with dynamic routes, Astro needs to know possible paths
-  // For a fully dynamic API, you can remove this or return all possible IDs
   return [];
 };
 
-export const get = (context: APIContext) => {
-  if (context.request.method === "GET") {
+export const get = async (context: APIContext) => {
+  try {
+    await connectDB();
+
     const { id } = context.params;
 
     if (!id) {
-      const posts = Array.from(postsStore.values());
+      const posts = await Post.find().sort({ createdAt: -1 });
       return createSuccessResponse(posts);
     }
 
-    const post = postsStore.get(id);
+    const post = await Post.findById(id);
     if (!post) {
       return createNotFoundResponse("Post");
     }
 
-    return createSuccessResponse(post);
+    return createSuccessResponse(post.toObject());
+  } catch (error) {
+    console.error("Posts GET error:", error);
+    return createBadRequestResponse(
+      error instanceof Error ? error.message : "Failed to fetch posts"
+    );
   }
-
-  return methodNotAllowed();
 };
 
 export const put = async (context: APIContext) => {
-  const { id } = context.params;
+  try {
+    await connectDB();
 
-  if (!id) {
-    return createBadRequestResponse("Post ID is required");
+    const { id } = context.params;
+
+    if (!id) {
+      return createBadRequestResponse("Post ID is required");
+    }
+
+    const post = await Post.findById(id);
+    if (!post) {
+      return createNotFoundResponse("Post");
+    }
+
+    const { data, error } = await validateBody(context, updatePostSchema);
+    if (error) return error;
+
+    const updated = await Post.findByIdAndUpdate(
+      id,
+      { ...data },
+      { new: true, runValidators: true }
+    );
+
+    return createSuccessResponse(updated?.toObject());
+  } catch (error) {
+    console.error("Posts PUT error:", error);
+    return createBadRequestResponse(
+      error instanceof Error ? error.message : "Failed to update post"
+    );
   }
-
-  const post = postsStore.get(id);
-  if (!post) {
-    return createNotFoundResponse("Post");
-  }
-
-  const { data, error } = await validateBody(context, updatePostSchema);
-  if (error) return error;
-
-  const updated: Post = {
-    ...post,
-    ...data,
-    updatedAt: new Date().toISOString(),
-  };
-
-  postsStore.set(id, updated);
-
-  return createSuccessResponse(updated);
 };
 
-export const del = (context: APIContext) => {
-  const { id } = context.params;
+export const del = async (context: APIContext) => {
+  try {
+    await connectDB();
 
-  if (!id) {
-    return createBadRequestResponse("Post ID is required");
+    const { id } = context.params;
+
+    if (!id) {
+      return createBadRequestResponse("Post ID is required");
+    }
+
+    const post = await Post.findByIdAndDelete(id);
+    if (!post) {
+      return createNotFoundResponse("Post");
+    }
+
+    return createSuccessResponse({ message: "Post deleted" });
+  } catch (error) {
+    console.error("Posts DELETE error:", error);
+    return createBadRequestResponse(
+      error instanceof Error ? error.message : "Failed to delete post"
+    );
   }
-
-  if (!postsStore.has(id)) {
-    return createNotFoundResponse("Post");
-  }
-
-  postsStore.delete(id);
-
-  return createSuccessResponse({ message: "Post deleted" });
 };
