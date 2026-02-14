@@ -8,6 +8,7 @@ interface AIResponse {
   success: boolean;
   response?: string;
   error?: string;
+  timestamp?: string;
 }
 
 /**
@@ -15,7 +16,13 @@ interface AIResponse {
  * POST /api/ai-chat
  * 
  * Accepts a prompt and returns AI-generated teaching materials
- * Ready for integration with your AI backend service
+ * Supports multiple AI service providers
+ * 
+ * Environment Variables Required:
+ * - AI_SERVICE_TYPE: 'openai' | 'custom' | 'placeholder' (default: 'placeholder')
+ * - OPENAI_API_KEY: Your OpenAI API key (if using OpenAI)
+ * - CUSTOM_AI_ENDPOINT: Your custom AI backend URL (if using custom)
+ * - CUSTOM_AI_API_KEY: Your custom backend API key (if using custom)
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -25,6 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({
           success: false,
           error: 'Method not allowed. Use POST.',
+          timestamp: new Date().toISOString(),
         } as AIResponse),
         { status: 405, headers: { 'Content-Type': 'application/json' } }
       );
@@ -39,6 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({
           success: false,
           error: 'Invalid JSON in request body',
+          timestamp: new Date().toISOString(),
         } as AIResponse),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -51,24 +60,32 @@ export const POST: APIRoute = async ({ request }) => {
         JSON.stringify({
           success: false,
           error: 'Prompt is required and must be a non-empty string',
+          timestamp: new Date().toISOString(),
         } as AIResponse),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // TODO: Integrate with your AI backend service
-    // Example integration points:
-    // 1. Call your Flask/Python backend
-    // 2. Call OpenAI API or other AI service
-    // 3. Process the prompt through your custom AI model
-    
-    // Placeholder response - replace with actual AI service call
+    // Validate prompt length
+    if (prompt.length > 5000) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Prompt exceeds maximum length of 5000 characters',
+          timestamp: new Date().toISOString(),
+        } as AIResponse),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generate AI response based on configured service
     const aiResponse = await generateAIResponse(prompt);
 
     return new Response(
       JSON.stringify({
         success: true,
         response: aiResponse,
+        timestamp: new Date().toISOString(),
       } as AIResponse),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -78,6 +95,7 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         success: false,
         error: 'Internal server error. Please try again later.',
+        timestamp: new Date().toISOString(),
       } as AIResponse),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
@@ -85,37 +103,109 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 /**
- * Placeholder function for AI response generation
- * Replace this with your actual AI service integration
+ * AI Response Generation
+ * Routes to the appropriate AI service based on environment configuration
  */
 async function generateAIResponse(prompt: string): Promise<string> {
-  // TODO: Replace with actual AI service call
-  // Example implementations:
+  const serviceType = (import.meta.env.AI_SERVICE_TYPE || 'placeholder').toLowerCase();
+
+  try {
+    switch (serviceType) {
+      case 'openai':
+        return await callOpenAI(prompt);
+      case 'custom':
+        return await callCustomBackend(prompt);
+      case 'placeholder':
+      default:
+        return generatePlaceholderResponse(prompt);
+    }
+  } catch (error) {
+    console.error(`Error calling ${serviceType} AI service:`, error);
+    throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * OpenAI Integration
+ * Requires: OPENAI_API_KEY environment variable
+ */
+async function callOpenAI(prompt: string): Promise<string> {
+  const apiKey = import.meta.env.OPENAI_API_KEY;
   
-  // Option 1: Call your Flask backend
-  // const response = await fetch('http://your-flask-backend.com/api/generate', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ prompt })
-  // });
-  // const data = await response.json();
-  // return data.response;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
 
-  // Option 2: Call OpenAI API
-  // const response = await fetch('https://api.openai.com/v1/chat/completions', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-  //   },
-  //   body: JSON.stringify({
-  //     model: 'gpt-4',
-  //     messages: [{ role: 'user', content: prompt }]
-  //   })
-  // });
-  // const data = await response.json();
-  // return data.choices[0].message.content;
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert CBC (Competency-Based Curriculum) teaching assistant. Generate high-quality, curriculum-aligned teaching materials.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    }),
+  });
 
-  // Placeholder response
-  return `Generated response for: "${prompt}"\n\nThis is a placeholder response. Connect your AI backend service to generate actual teaching materials.`;
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || 'No response generated';
+}
+
+/**
+ * Custom Backend Integration
+ * Requires: CUSTOM_AI_ENDPOINT and optionally CUSTOM_AI_API_KEY environment variables
+ */
+async function callCustomBackend(prompt: string): Promise<string> {
+  const endpoint = import.meta.env.CUSTOM_AI_ENDPOINT;
+  const apiKey = import.meta.env.CUSTOM_AI_API_KEY;
+
+  if (!endpoint) {
+    throw new Error('CUSTOM_AI_ENDPOINT environment variable is not set');
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ prompt }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Custom backend error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.response || data.result || 'No response generated';
+}
+
+/**
+ * Placeholder Response
+ * Used for development/testing when no AI service is configured
+ */
+function generatePlaceholderResponse(prompt: string): string {
+  return `Generated response for: "${prompt}"\n\nThis is a placeholder response. To connect a real AI service:\n\n1. Set AI_SERVICE_TYPE to 'openai' or 'custom'\n2. Configure the required environment variables:\n   - For OpenAI: Set OPENAI_API_KEY\n   - For Custom Backend: Set CUSTOM_AI_ENDPOINT and optionally CUSTOM_AI_API_KEY\n3. Restart your application\n\nThe API is ready to accept requests and will route them to your configured AI service.`;
 }
