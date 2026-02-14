@@ -25,7 +25,33 @@ The easiest option for production use.
 - Temperature: 0.7 (balanced creativity)
 - Max tokens: 2000 per response
 
-### 2. **Custom Backend**
+### 2. **OpenRouter**
+Access multiple AI models through a single API.
+
+#### Setup Steps:
+1. Get your API key from [OpenRouter](https://openrouter.ai/keys)
+2. Set environment variable:
+   ```
+   AI_SERVICE_TYPE=openrouter
+   OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
+   ```
+3. Restart your application
+4. The API will automatically route requests to OpenRouter using GPT-4 Turbo
+
+#### Features:
+- Access to multiple models (GPT-4, Claude, Mistral, etc.)
+- Same API format as OpenAI
+- Temperature: 0.7 (balanced creativity)
+- Max tokens: 2000 per response
+- Easy model switching by changing the model parameter
+
+#### Available Models on OpenRouter:
+- `openai/gpt-4-turbo` (default)
+- `anthropic/claude-3-opus`
+- `mistralai/mistral-large`
+- Many others available - check OpenRouter dashboard for full list
+
+### 3. **Custom Backend**
 Connect to your own Flask, Node.js, or Python backend.
 
 #### Setup Steps:
@@ -94,7 +120,7 @@ app.post('/api/generate', async (req, res) => {
 app.listen(3001, () => console.log('Server running on port 3001'));
 ```
 
-### 3. **Placeholder (Development)**
+### 4. **Placeholder (Development)**
 Default mode for testing without external services.
 
 #### Setup:
@@ -162,6 +188,12 @@ The API handles these error cases:
 ```env
 AI_SERVICE_TYPE=openai
 OPENAI_API_KEY=sk-your-key-here
+```
+
+### For OpenRouter
+```env
+AI_SERVICE_TYPE=openrouter
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
 ```
 
 ### For Custom Backend

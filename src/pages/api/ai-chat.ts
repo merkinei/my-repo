@@ -19,8 +19,9 @@ interface AIResponse {
  * Supports multiple AI service providers
  * 
  * Environment Variables Required:
- * - AI_SERVICE_TYPE: 'openai' | 'custom' | 'placeholder' (default: 'placeholder')
+ * - AI_SERVICE_TYPE: 'openai' | 'openrouter' | 'custom' | 'placeholder' (default: 'placeholder')
  * - OPENAI_API_KEY: Your OpenAI API key (if using OpenAI)
+ * - OPENROUTER_API_KEY: Your OpenRouter API key (if using OpenRouter)
  * - CUSTOM_AI_ENDPOINT: Your custom AI backend URL (if using custom)
  * - CUSTOM_AI_API_KEY: Your custom backend API key (if using custom)
  */
@@ -113,6 +114,8 @@ async function generateAIResponse(prompt: string): Promise<string> {
     switch (serviceType) {
       case 'openai':
         return await callOpenAI(prompt);
+      case 'openrouter':
+        return await callOpenRouter(prompt);
       case 'custom':
         return await callCustomBackend(prompt);
       case 'placeholder':
@@ -162,6 +165,50 @@ async function callOpenAI(prompt: string): Promise<string> {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || 'No response generated';
+}
+
+/**
+ * OpenRouter Integration
+ * Requires: OPENROUTER_API_KEY environment variable
+ * OpenRouter provides access to multiple models through a unified API
+ */
+async function callOpenRouter(prompt: string): Promise<string> {
+  const apiKey = import.meta.env.OPENROUTER_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY environment variable is not set');
+  }
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-4-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert CBC (Competency-Based Curriculum) teaching assistant. Generate high-quality, curriculum-aligned teaching materials.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`OpenRouter API error: ${error.error?.message || 'Unknown error'}`);
   }
 
   const data = await response.json();
