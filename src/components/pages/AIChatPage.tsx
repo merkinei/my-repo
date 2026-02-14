@@ -34,12 +34,28 @@ export default function AIChatPage() {
     if (!prompt.trim()) return;
     
     setIsSending(true);
+    setResponse(null);
     
-    // Simulate API call - ready for backend integration
-    setTimeout(() => {
-      setResponse('Thank you for your prompt! The AI backend will be connected soon to generate your CBC-aligned teaching materials. This interface is ready for API integration.');
+    try {
+      const res = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim() })
+      });
+
+      const data = await res.json();
+      
+      if (data.success && data.response) {
+        setResponse(data.response);
+      } else {
+        setResponse(`Error: ${data.error || 'Failed to generate response'}`);
+      }
+    } catch (error) {
+      console.error('Error sending prompt:', error);
+      setResponse('Error: Failed to connect to the AI service. Please try again.');
+    } finally {
       setIsSending(false);
-    }, 1500);
+    }
   };
 
   const handleExampleClick = (exampleText: string) => {
@@ -230,9 +246,9 @@ export default function AIChatPage() {
                 {/* Info Box */}
                 {!response && (
                   <div className="mt-8 bg-background p-6 rounded-lg border border-grey800">
-                    <h3 className="font-heading text-lg mb-3 text-grey100">Ready for Backend Integration</h3>
+                    <h3 className="font-heading text-lg mb-3 text-grey100">Backend Ready</h3>
                     <p className="font-paragraph text-sm text-grey400">
-                      This interface is prepared to connect with your Flask or REST API backend. The prompt will be sent to your AI service, and the response will be displayed here with proper formatting for lesson plans, schemes of work, and assessments.
+                      The API endpoint is now active at <code className="bg-grey900 px-2 py-1 rounded text-primary">/api/ai-chat</code>. Connect your AI service to start generating CBC-aligned teaching materials.
                     </p>
                   </div>
                 )}
