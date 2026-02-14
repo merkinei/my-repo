@@ -1,7 +1,10 @@
 import type { APIRoute } from 'astro';
+import { getCurriculumContextForLesson } from '../../lib/api/curriculum-loader';
 
 interface AIRequest {
   prompt: string;
+  grade?: string;
+  subject?: string;
 }
 
 interface AIResponse {
@@ -79,8 +82,12 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    // Extract optional grade and subject for curriculum context
+    const grade = body.grade || 'General';
+    const subject = body.subject || 'General';
+
     // Generate AI response based on configured service
-    const aiResponse = await generateAIResponse(prompt);
+    const aiResponse = await generateAIResponse(prompt, grade, subject);
 
     return new Response(
       JSON.stringify({
@@ -107,20 +114,24 @@ export const POST: APIRoute = async ({ request }) => {
  * AI Response Generation
  * Routes to the appropriate AI service based on environment configuration
  */
-async function generateAIResponse(prompt: string): Promise<string> {
+async function generateAIResponse(
+  prompt: string,
+  grade: string = 'General',
+  subject: string = 'General'
+): Promise<string> {
   const serviceType = (import.meta.env.AI_SERVICE_TYPE || 'placeholder').toLowerCase();
 
   try {
     switch (serviceType) {
       case 'openai':
-        return await callOpenAI(prompt);
+        return await callOpenAI(prompt, grade, subject);
       case 'openrouter':
-        return await callOpenRouter(prompt);
+        return await callOpenRouter(prompt, grade, subject);
       case 'custom':
         return await callCustomBackend(prompt);
       case 'placeholder':
       default:
-        return generatePlaceholderResponse(prompt);
+        return generatePlaceholderResponse(prompt, grade, subject);
     }
   } catch (error) {
     console.error(`Error calling ${serviceType} AI service:`, error);
@@ -132,12 +143,19 @@ async function generateAIResponse(prompt: string): Promise<string> {
  * OpenAI Integration
  * Requires: OPENAI_API_KEY environment variable
  */
-async function callOpenAI(prompt: string): Promise<string> {
+async function callOpenAI(
+  prompt: string,
+  grade: string = 'General',
+  subject: string = 'General'
+): Promise<string> {
   const apiKey = import.meta.env.OPENAI_API_KEY;
   
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
   }
+
+  const curriculumContext = await getCurriculumContextForLesson(grade, subject);
+  const systemPrompt = buildSystemPrompt(curriculumContext);
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -150,7 +168,7 @@ async function callOpenAI(prompt: string): Promise<string> {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert CBC (Competency-Based Curriculum) teaching assistant. Generate high-quality, curriculum-aligned teaching materials.',
+          content: systemPrompt,
         },
         {
           role: 'user',
@@ -158,7 +176,7 @@ async function callOpenAI(prompt: string): Promise<string> {
         },
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 3500,
     }),
   });
 
@@ -176,12 +194,19 @@ async function callOpenAI(prompt: string): Promise<string> {
  * Requires: OPENROUTER_API_KEY environment variable
  * OpenRouter provides access to multiple models through a unified API
  */
-async function callOpenRouter(prompt: string): Promise<string> {
+async function callOpenRouter(
+  prompt: string,
+  grade: string = 'General',
+  subject: string = 'General'
+): Promise<string> {
   const apiKey = import.meta.env.OPENROUTER_API_KEY;
   
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY environment variable is not set');
   }
+
+  const curriculumContext = await getCurriculumContextForLesson(grade, subject);
+  const systemPrompt = buildSystemPrompt(curriculumContext);
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -194,7 +219,7 @@ async function callOpenRouter(prompt: string): Promise<string> {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert CBC (Competency-Based Curriculum) teaching assistant. Generate high-quality, curriculum-aligned teaching materials.',
+          content: systemPrompt,
         },
         {
           role: 'user',
@@ -202,7 +227,7 @@ async function callOpenRouter(prompt: string): Promise<string> {
         },
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 3500,
     }),
   });
 
@@ -249,55 +274,199 @@ async function callCustomBackend(prompt: string): Promise<string> {
   return data.response || data.result || 'No response generated';
 }
 
+
+
+/**
+ * Build System Prompt with Curriculum Context
+ * Creates an enhanced system prompt that includes CBC curriculum information
+ */
+function buildSystemPrompt(curriculumContext: string): string {
+  const basePrompt = `You are an expert CBC (Competency-Based Curriculum) teaching assistant specializing in creating comprehensive, engaging, and standards-aligned lesson plans.
+
+When generating lesson plans, follow these guidelines:
+- Create detailed 40-minute lesson plans with specific time allocations for each activity
+- Include clear learning objectives aligned with CBC competencies
+- Incorporate active learning strategies and student engagement
+- Provide specific assessment strategies and success criteria
+- Include differentiation strategies for diverse learners
+- Reference relevant curriculum standards and competencies
+
+${curriculumContext ? `Current Curriculum Context:\n${curriculumContext}\n` : ''}
+
+Generate high-quality, curriculum-aligned teaching materials that are practical and immediately implementable.`;
+
+  return basePrompt;
+}
+
 /**
  * Placeholder Response
  * Used for development/testing when no AI service is configured
  * Returns realistic mock teaching material for preview purposes
  */
-function generatePlaceholderResponse(prompt: string): string {
+function generatePlaceholderResponse(
+  prompt: string,
+  grade: string = 'General',
+  subject: string = 'General'
+): string {
   return `# Lesson Plan: ${prompt}
 
-## Objectives
+**Duration:** 40 minutes | **Grade Level:** ${grade} | **Subject:** ${subject}
+
+## Learning Objectives
 By the end of this lesson, students will be able to:
-- Understand core concepts related to the topic
-- Apply knowledge in practical scenarios
-- Evaluate and analyze real-world examples
+- Identify and analyze main ideas and supporting details in texts
+- Use context clues to determine word meanings
+- Make inferences based on textual evidence
+- Compare and contrast different perspectives in reading materials
+- Apply active reading strategies to improve comprehension
 
-## Standards Alignment
-This lesson aligns with CBC (Competency-Based Curriculum) standards for critical thinking, collaboration, and subject mastery.
-
-## Learning Activities
-
-### Warm-up (5 minutes)
-- Introduce the topic with a relatable real-world scenario
-- Allow students to share prior knowledge and experiences
-
-### Main Instruction (15 minutes)
-- Present key concepts using visual aids and examples
-- Use think-pair-share activities for engagement
-- Encourage questions and discussions
-
-### Practice Activities (15 minutes)
-- Individual or group problem-solving exercises
-- Interactive simulations or case studies
-- Peer teaching and review activities
-
-### Assessment (5 minutes)
-- Quick formative assessment through questioning
-- Exit ticket or reflection activity
-- Identify areas needing additional support
-
-## Resources Needed
-- Textbooks and reference materials
-- Technology: Projector, laptops or tablets
-- Manipulatives or visual aids as appropriate
-
-## Homework/Follow-up
-- Reinforce concepts with targeted practice
-- Encourage reflective thinking
-- Prepare for next lesson
+## CBC Competencies Addressed
+- Critical Thinking and Problem Solving
+- Communication and Information Literacy
+- Collaboration and Teamwork
+- Self-Directed Learning
 
 ---
 
-**Note:** This is a development/placeholder response. To use real AI services (OpenAI, OpenRouter, or custom backend), configure the AI_SERVICE_TYPE environment variable and restart your application.`;
+## Lesson Timeline (40 minutes)
+
+### 1. Hook & Activation (5 minutes)
+**Objective:** Engage students and activate prior knowledge
+
+- Start with a compelling question: "What makes a story memorable?"
+- Show a brief video clip (2 min) or read an engaging excerpt
+- Ask students to discuss with a partner what they noticed
+- Connect to today's reading comprehension strategies
+
+**Differentiation:** Provide visual aids for visual learners; allow verbal discussion for diverse learners
+
+---
+
+### 2. Direct Instruction: Reading Strategies (8 minutes)
+**Objective:** Teach explicit reading comprehension strategies
+
+**Content Coverage:**
+- Strategy 1: Previewing & Predicting
+  * Scan headings, images, and first paragraph
+  * Make predictions about content
+  
+- Strategy 2: Identifying Main Idea
+  * Look for topic sentences
+  * Distinguish between main idea and details
+  
+- Strategy 3: Using Context Clues
+  * Analyze surrounding sentences
+  * Use word parts (prefixes, suffixes, roots)
+
+**Teacher Modeling:**
+- Demonstrate "think-aloud" with a sample text
+- Show annotation strategies (highlighting, margin notes)
+- Model how to revise predictions as you read
+
+**Resources:** Anchor chart with strategies, sample text document
+
+---
+
+### 3. Guided Practice: Text Analysis (12 minutes)
+**Objective:** Apply strategies with teacher support
+
+**Structured Text:** Provide a grade-appropriate reading passage (300-400 words)
+
+**Activity Steps:**
+1. **Read Aloud Together** (3 min) - Teacher reads first paragraph expressively while students follow
+2. **Paired Investigation** (5 min) - Students work in pairs to:
+   - Highlight main idea in paragraph 2
+   - Identify 2 vocabulary words and use context clues
+   - Write one prediction about what happens next
+3. **Whole-Group Debrief** (4 min) - Share findings and discuss:
+   - What context clues helped you?
+   - How accurate were your predictions?
+
+**Assessment Check:** Monitor pair work; note students needing additional support
+
+---
+
+### 4. Independent Practice (12 minutes)
+**Objective:** Students apply strategies with decreasing support
+
+**Choice Board** (students select one activity):
+
+**Option A: Close Reading Analysis**
+- Read a second passage independently
+- Complete a graphic organizer:
+  * Main idea statement
+  * 3 supporting details
+  * 2 vocabulary words with definitions from context
+  * 1 inference with supporting evidence
+
+**Option B: Comprehension Questions**
+- Answer 5 guided questions with page citations:
+  * What is the main problem?
+  * How does the character respond?
+  * What can you infer about the setting?
+  * What context clue helped you understand [target word]?
+  * What might happen next?
+
+**Option C: Comparative Reading**
+- Compare two short passages on the same topic
+- Create a Venn diagram showing:
+  * Main ideas from each text
+  * Similarities and differences in perspective
+
+**Differentiation:**
+- Advanced: Analyze author's purpose and tone
+- Below Grade Level: Use pre-annotated text or audio version
+- ELL: Provide vocabulary support sheet with visual aids
+
+---
+
+### 5. Closure & Reflection (3 minutes)
+**Objective:** Consolidate learning and preview next lesson
+
+- Quick individual reflection (written or think-aloud):
+  * Which reading strategy was most helpful today?
+  * When will you use this outside of class?
+- Highlight one student success from the lesson
+- Preview tomorrow: "We'll apply these strategies to a longer novel excerpt"
+
+**Exit Ticket Option:**
+- On index cards: Write one main idea you learned and one strategy you'll try
+
+---
+
+## Formative Assessment Strategies
+- Observation of pair work discussions
+- Graphic organizer completion and accuracy
+- Exit ticket responses
+- Questioning during whole-group debrief
+- Individual practice work samples
+
+## Success Criteria
+- Students can identify main ideas with 75%+ accuracy
+- Students can use 2+ context clues to define vocabulary
+- Students can make 1 inference supported by textual evidence
+
+---
+
+## Resources Required
+- Grade-appropriate reading passages (printed or digital)
+- Graphic organizers (template provided or digital form)
+- Anchor chart with reading strategies
+- Optional: Audio version of text for ELL/accessibility
+- Projector or document camera for modeling
+
+## Homework/Follow-Up Extension
+- Read another passage independently using the strategies
+- Journal: Describe which strategy was easiest/hardest and why
+- Prepare for tomorrow's literature circle discussion
+
+## Teacher Notes
+- Pre-teach vocabulary for students below grade level
+- Have additional passages available for early finishers
+- Record student struggling points for future mini-lessons
+- Celebrate effort and strategy use, not just accuracy
+
+---
+
+**Note:** This is a development/placeholder response. To use real AI services with your CBC curriculum PDFs, configure the AI_SERVICE_TYPE environment variable and place PDF files in the public/curriculum directory.`;
 }
