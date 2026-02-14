@@ -252,7 +252,52 @@ async function callCustomBackend(prompt: string): Promise<string> {
 /**
  * Placeholder Response
  * Used for development/testing when no AI service is configured
+ * Returns realistic mock teaching material for preview purposes
  */
 function generatePlaceholderResponse(prompt: string): string {
-  return `Generated response for: "${prompt}"\n\nThis is a placeholder response. To connect a real AI service:\n\n1. Set AI_SERVICE_TYPE to 'openai' or 'custom'\n2. Configure the required environment variables:\n   - For OpenAI: Set OPENAI_API_KEY\n   - For Custom Backend: Set CUSTOM_AI_ENDPOINT and optionally CUSTOM_AI_API_KEY\n3. Restart your application\n\nThe API is ready to accept requests and will route them to your configured AI service.`;
+  return `# Lesson Plan: ${prompt}
+
+## Objectives
+By the end of this lesson, students will be able to:
+- Understand core concepts related to the topic
+- Apply knowledge in practical scenarios
+- Evaluate and analyze real-world examples
+
+## Standards Alignment
+This lesson aligns with CBC (Competency-Based Curriculum) standards for critical thinking, collaboration, and subject mastery.
+
+## Learning Activities
+
+### Warm-up (5 minutes)
+- Introduce the topic with a relatable real-world scenario
+- Allow students to share prior knowledge and experiences
+
+### Main Instruction (15 minutes)
+- Present key concepts using visual aids and examples
+- Use think-pair-share activities for engagement
+- Encourage questions and discussions
+
+### Practice Activities (15 minutes)
+- Individual or group problem-solving exercises
+- Interactive simulations or case studies
+- Peer teaching and review activities
+
+### Assessment (5 minutes)
+- Quick formative assessment through questioning
+- Exit ticket or reflection activity
+- Identify areas needing additional support
+
+## Resources Needed
+- Textbooks and reference materials
+- Technology: Projector, laptops or tablets
+- Manipulatives or visual aids as appropriate
+
+## Homework/Follow-up
+- Reinforce concepts with targeted practice
+- Encourage reflective thinking
+- Prepare for next lesson
+
+---
+
+**Note:** This is a development/placeholder response. To use real AI services (OpenAI, OpenRouter, or custom backend), configure the AI_SERVICE_TYPE environment variable and restart your application.`;
 }
