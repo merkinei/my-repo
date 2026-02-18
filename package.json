@@ -4,8 +4,11 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "wix dev",
+    "dev:astro": "astro dev",
     "build": "wix build",
+    "build:astro": "astro build",
     "preview": "wix preview",
+    "preview:astro": "astro preview",
     "release": "wix release",
     "env": "wix env pull",
     "check": "npx astro check --js-only",
