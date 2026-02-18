@@ -157,8 +157,8 @@ Standards Alignment:
     `.trim(),
   };
   
-  const key = \`\${grade}_\${subject}\`;
-  return contexts[key] || \`[CBC Grade \${grade} \${subject} - To add curriculum, place documents in public/curriculum directory]\`;
+  const key = `${grade}_${subject}`;
+  return contexts[key] || `[CBC Grade ${grade} ${subject} - To add curriculum, place documents in public/curriculum directory]`;
 }
 
 /**
@@ -167,7 +167,7 @@ Standards Alignment:
  */
 function normalizeGrade(grade: string): string {
   let cleaned = grade.replace(/[^0-9]/g, '');
-  return \`Grade_\${cleaned}\`;
+  return `Grade_${cleaned}`;
 }
 
 /**

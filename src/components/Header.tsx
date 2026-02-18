@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Image } from '@/components/ui/image';
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,10 +25,13 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">E</span>
-            </div>
-            <span className="font-heading text-2xl font-bold text-grey100">EduRipple</span>
+            <Image 
+              src="https://static.wixstatic.com/media/93a3ae_d01325e4697b4dd781b3bb85b687c7c0~mv2.png" 
+              alt="EduRipple Logo" 
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </Link>
 
           {/* Desktop Navigation */}
