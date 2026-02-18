@@ -191,7 +191,7 @@ export async function listAvailableCurriculum(): Promise<string[]> {
         
         const fullPath = path.join(dir, file);
         const stats = fs.statSync(fullPath);
-        const display = prefix ? \`\${prefix}/\${file}\` : file;
+        const display = prefix ? `${prefix}/${file}` : file;
         
         if (stats.isDirectory()) {
           traverseDir(fullPath, display);

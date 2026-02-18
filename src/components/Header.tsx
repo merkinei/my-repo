@@ -25,13 +25,15 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <Image 
-              src="https://static.wixstatic.com/media/93a3ae_d01325e4697b4dd781b3bb85b687c7c0~mv2.png" 
-              alt="EduRipple Logo" 
-              width={40}
-              height={40}
-              className="object-contain"
-            />
+            <div className="bg-transparent">
+              <Image 
+                src="https://static.wixstatic.com/media/93a3ae_d01325e4697b4dd781b3bb85b687c7c0~mv2.png" 
+                alt="EduRipple Logo" 
+                width={40}
+                height={40}
+                className="object-contain bg-transparent"
+              />
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
