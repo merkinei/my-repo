@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCurriculumContextForLesson } from '../../lib/api/curriculum-loader';
+import { buildCBCSystemPrompt } from '../../lib/api/cbc-templates';
 
 interface AIRequest {
   prompt: string;
@@ -276,30 +277,18 @@ async function callCustomBackend(prompt: string): Promise<string> {
 
 
 
+
 /**
  * Build System Prompt with Curriculum Context
- * Creates an enhanced system prompt that includes CBC curriculum information
+ * Uses Kenyan CBC official formatting standards via cbc-templates
  */
 function buildSystemPrompt(curriculumContext: string): string {
-  const basePrompt = `You are an expert CBC (Competency-Based Curriculum) teaching assistant specializing in creating comprehensive, engaging, and standards-aligned lesson plans.
-
-When generating lesson plans, follow these guidelines:
-- Create detailed 40-minute lesson plans with specific time allocations for each activity
-- Include clear learning objectives aligned with CBC competencies
-- Incorporate active learning strategies and student engagement
-- Provide specific assessment strategies and success criteria
-- Include differentiation strategies for diverse learners
-- Reference relevant curriculum standards and competencies
-
-${curriculumContext ? `Current Curriculum Context:\n${curriculumContext}\n` : ''}
-
-Generate high-quality, curriculum-aligned teaching materials that are practical and immediately implementable.`;
-
-  return basePrompt;
+  return buildCBCSystemPrompt(curriculumContext);
 }
 
 /**
  * Placeholder Response
+
  * Used for development/testing when no AI service is configured
  * Returns realistic mock teaching material for preview purposes
  */
