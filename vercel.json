@@ -1,7 +1,7 @@
 {
-  "buildCommand": "ASTRO_CONFIG_FILE=astro.config.vercel.mjs npx astro build",
+  "installCommand": "cp package.vercel.json package.json && npm install",
+  "buildCommand": "astro build",
   "framework": "astro",
-  "installCommand": "npm install --legacy-peer-deps || npm install --force || true",
   "env": {
     "NODE_VERSION": "20.x"
   }
