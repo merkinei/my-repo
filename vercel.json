@@ -1,8 +1,5 @@
 {
-  "installCommand": "cp package.vercel.json package.json && npm install",
-  "buildCommand": "astro build",
+  "buildCommand": "npm run build",
   "framework": "astro",
-  "env": {
-    "NODE_VERSION": "20.x"
-  }
+  "nodejs": "20.x"
 }
