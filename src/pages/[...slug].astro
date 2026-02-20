@@ -1,28 +1,28 @@
 ---
-import { SEO } from '@wix/seo/components';
-import { loadSEOTagsServiceConfig } from '@wix/seo/services';
-import { Head } from "@/components/Head";
-import AppRouter from "@/components/Router";
-import "@wix/wix-vibe-plugins/plugins-vars.css";
-import "@wix/wix-vibe-plugins/plugins-theme.css";
-import "@/styles/global.css";
+import Layout from '../components/layout.astro';
 
-const seoTagsServiceConfig = await loadSEOTagsServiceConfig({
-  pageUrl: Astro.url.href,
-  itemData: {
-    pageName: 'Home',
-  },
-});
+const { slug } = Astro.params;
 ---
 
-<html lang="en" class="w-full h-full">
-  <head>
-    <Head />
-    <SEO.Tags seoTagsServiceConfig={seoTagsServiceConfig} slot="seo-tags" />
-  </head>
-  <body class="w-full h-full">
-    <div id="root" class="w-full h-full">
-      <AppRouter client:only="react" />
+<Layout title="Page Not Found - CBC AI System">
+  <main class="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white flex items-center justify-center px-6">
+    <div class="text-center max-w-lg">
+      <h1 class="text-6xl font-bold mb-4">404</h1>
+      <p class="text-2xl font-semibold mb-4">Page Not Found</p>
+      <p class="text-slate-400 mb-8">The page you're looking for doesn't exist.</p>
+      
+      <div class="space-y-4">
+        <a 
+          href="/" 
+          class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition"
+        >
+          Return Home
+        </a>
+        
+        <p class="text-slate-400 text-sm">
+          Looking for API documentation? Visit <a href="/#api-documentation" class="text-blue-400 hover:underline">the homepage</a>
+        </p>
+      </div>
     </div>
-  </body>
-</html>
+  </main>
+</Layout>
