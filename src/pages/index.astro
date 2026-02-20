@@ -1,0 +1,88 @@
+---
+// CBC AI System Homepage
+import Layout from '../components/layout.astro';
+---
+
+<Layout title="CBC AI System - Kenyan Lesson Plans">
+  <main class="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+    <div class="max-w-4xl mx-auto px-6 py-20">
+      <h1 class="text-5xl font-bold mb-6">CBC AI System</h1>
+      <p class="text-xl text-slate-300 mb-8">
+        AI-powered lesson plan generator for Kenyan Competency-Based Curriculum (CBC)
+      </p>
+      
+      <div class="grid md:grid-cols-3 gap-6 mb-12">
+        <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+          <h3 class="text-lg font-semibold mb-3">📋 Lesson Plans</h3>
+          <p class="text-slate-400">Generate KICD-compliant lesson plans with learning outcomes and competencies</p>
+        </div>
+        
+        <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+          <h3 class="text-lg font-semibold mb-3">📊 Schemes of Work</h3>
+          <p class="text-slate-400">Create term-long teaching guides with weekly breakdowns</p>
+        </div>
+        
+        <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+          <h3 class="text-lg font-semibold mb-3">✅ Assessment Rubrics</h3>
+          <p class="text-slate-400">4-point CBC rubrics for learner evaluation</p>
+        </div>
+      </div>
+
+      <section class="mb-12">
+        <h2 class="text-3xl font-bold mb-6">API Documentation</h2>
+        
+        <div class="space-y-6">
+          <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+            <h3 class="text-lg font-semibold mb-2">POST /api/ai-chat</h3>
+            <p class="text-slate-400 mb-4">Generate CBC documents using AI</p>
+            <pre class="bg-slate-900 p-4 rounded text-sm overflow-x-auto">
+{`curl -X POST https://my-repo-omega-opal.vercel.app/api/ai-chat \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "message": "Create a grade 7 english lesson plan for week 3",
+    "documentType": "lesson-plan",
+    "grade": "7",
+    "subject": "English"
+  }'`}
+            </pre>
+          </div>
+
+          <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+            <h3 class="text-lg font-semibold mb-2">POST /api/parse-cbc</h3>
+            <p class="text-slate-400 mb-4">Parse AI-generated text into structured CBC format</p>
+            <pre class="bg-slate-900 p-4 rounded text-sm overflow-x-auto">
+{`curl -X POST https://my-repo-omega-opal.vercel.app/api/parse-cbc \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "text": "# Lesson Plan...",
+    "documentType": "lesson-plan"
+  }'`}
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-slate-800 p-8 rounded-lg border border-slate-700">
+        <h2 class="text-2xl font-bold mb-4">Features</h2>
+        <ul class="space-y-3 text-slate-300">
+          <li>✅ KICD/TSC Compliance - Follows government standards</li>
+          <li>✅ Multiple AI Providers - OpenAI, OpenRouter, custom backends</li>
+          <li>✅ Document Parsing - Convert text to structured JSON</li>
+          <li>✅ Competency Tracking - 8-point core competencies framework</li>
+          <li>✅ Differentiation Support - Strategies for gifted, average, and struggling learners</li>
+          <li>✅ Assessment Tools - Formative and summative evaluation</li>
+        </ul>
+      </section>
+
+      <div class="mt-12 text-center text-slate-400">
+        <p>For more information, refer to the <a href="#" class="text-blue-400 hover:underline">API documentation</a></p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  main {
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+</style>
