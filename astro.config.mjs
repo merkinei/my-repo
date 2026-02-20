@@ -20,3 +20,4 @@ export default defineConfig({
     },
   },
 });
+// Built with CBC AI System
