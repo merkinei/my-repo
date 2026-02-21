@@ -24,16 +24,15 @@ export default function Header() {
       <div className="max-w-[100rem] mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="bg-transparent">
-              <Image 
-                src="https://static.wixstatic.com/media/93a3ae_d01325e4697b4dd781b3bb85b687c7c0~mv2.png" 
-                alt="EduRipple Logo" 
-                width={40}
-                height={40}
-                className="object-contain bg-transparent"
-              />
-            </div>
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <Image 
+              src="https://static.wixstatic.com/media/93a3ae_d01325e4697b4dd781b3bb85b687c7c0~mv2.png" 
+              alt="EduRipple Logo" 
+              width={50}
+              height={50}
+              className="object-contain"
+              style={{ backgroundColor: 'transparent' }}
+            />
           </Link>
 
           {/* Desktop Navigation */}
